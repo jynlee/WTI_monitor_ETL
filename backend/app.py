@@ -1,16 +1,20 @@
 import os
 import pymysql
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent        # backend/
+FRONTEND_DIR = BASE_DIR.parent / "frontend"       # frontend/
+
+load_dotenv(BASE_DIR.parent / ".env")
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
+templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 
 def get_db():

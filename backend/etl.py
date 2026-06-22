@@ -1,11 +1,11 @@
 import os
 import requests
 import pymysql
+from pathlib import Path
 from datetime import date, timedelta
 from dotenv import load_dotenv
 
-# ── 1. 환경변수 로드 ──
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ECOS_API_KEY = os.getenv("ECOS_API_KEY")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
