@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ECOS_API_KEY = os.getenv("ECOS_API_KEY")
+FRED_API_KEY = os.getenv("FRED_API_KEY")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT", 3306))
 DB_USER = os.getenv("DB_USER")
@@ -17,6 +18,9 @@ DB_NAME = os.getenv("DB_NAME")
 # ECOS 통계 코드
 STAT_CODE = "731Y001"   # 주요국 통화의 대원화환율
 ITEM_CODE = "0000001"   # 원/달러(매매기준율)
+
+# FRED 시리즈 코드
+WTI_SERIES = "DCOILWTICO"  # WTI 유가 (달러/배럴)
 
 
 def get_db_connection():
@@ -90,6 +94,53 @@ def insert_data(conn, rows):
     return inserted_count
 
 
+def get_wti_last_date(conn):
+    """wti_daily 테이블의 가장 최신 날짜 조회"""
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT MAX(trade_date) FROM wti_daily")
+        result = cursor.fetchone()
+        return result[0]
+
+
+def fetch_fred_wti(start_date: str, end_date: str):
+    """FRED API 호출해서 WTI 유가 데이터 가져오기"""
+    url = (
+        f"https://api.stlouisfed.org/fred/series/observations"
+        f"?series_id={WTI_SERIES}"
+        f"&api_key={FRED_API_KEY}"
+        f"&observation_start={start_date}"
+        f"&observation_end={end_date}"
+        f"&file_type=json"
+    )
+
+    response = requests.get(url)
+    response.raise_for_status()
+    observations = response.json().get("observations", [])
+
+    # FRED는 데이터 없는 날 value를 "."으로 반환 → 필터링
+    return [o for o in observations if o["value"] != "."]
+
+
+def insert_wti(conn, rows):
+    """wti_daily 테이블에 증분 INSERT (중복 시 스킵)"""
+    if not rows:
+        print("[알림] WTI: 새로 저장할 데이터가 없습니다.")
+        return 0
+
+    inserted_count = 0
+    with conn.cursor() as cursor:
+        for row in rows:
+            sql = """
+                INSERT IGNORE INTO wti_daily (trade_date, wti_usd)
+                VALUES (%s, %s)
+            """
+            cursor.execute(sql, (row["date"], row["value"]))
+            inserted_count += cursor.rowcount
+
+    conn.commit()
+    return inserted_count
+
+
 def main():
     conn = get_db_connection()
 
@@ -116,8 +167,27 @@ def main():
 
         rows = fetch_ecos_data(start_str, end_str)
         inserted = insert_data(conn, rows)
+        print(f"[USD/KRW 완료] 총 {len(rows)}건 조회, {inserted}건 신규 저장")
 
-        print(f"[완료] 총 {len(rows)}건 조회, {inserted}건 신규 저장")
+        # ── WTI 증분 적재 ──
+        wti_last_date = get_wti_last_date(conn)
+
+        if wti_last_date is None:
+            wti_start = today - timedelta(days=365 * 2)
+            print(f"[WTI 초기 적재] {wti_start} ~ {yesterday}")
+        else:
+            wti_start = wti_last_date + timedelta(days=1)
+            print(f"[WTI 증분 적재] {wti_start} ~ {yesterday}")
+
+        if wti_start <= yesterday:
+            wti_rows = fetch_fred_wti(
+                wti_start.strftime("%Y-%m-%d"),
+                yesterday.strftime("%Y-%m-%d")
+            )
+            wti_inserted = insert_wti(conn, wti_rows)
+            print(f"[WTI 완료] 총 {len(wti_rows)}건 조회, {wti_inserted}건 신규 저장")
+        else:
+            print("[WTI 알림] 이미 최신 상태입니다.")
 
     finally:
         conn.close()
