@@ -1,0 +1,162 @@
+body {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* 상단 네비바 */
+.topbar {
+  background: #1e293b;
+  padding: 14px 0;
+}
+.topbar-title {
+  color: #f8fafc;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.topbar-sub {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+/* 요약 카드 */
+.summary-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  height: 100%;
+}
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.summary-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.summary-change {
+  font-size: 0.83rem;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.summary-date {
+  font-size: 0.73rem;
+  color: #cbd5e1;
+}
+.change-up   { color: #ef4444; }
+.change-down { color: #2563eb; }
+
+/* 차트 카드 & 계산기 카드 공통 */
+.chart-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+/* 탭 바 */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover  { color: #475569; }
+.tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+/* 차트 영역 */
+.chart-wrap {
+  position: relative;
+  height: 300px;
+}
+
+/* 계산기 */
+.calc-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+}
+.calc-label {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.calc-input {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+}
+.calc-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  outline: none;
+}
+.btn-calc {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-calc:hover { background: #1d4ed8; }
+
+/* 계산 결과 */
+.result-box {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+.result-cost {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+.result-unit {
+  font-size: 0.83rem;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+.result-judgment {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.judgment-cheap     { color: #16a34a; }
+.judgment-normal    { color: #d97706; }
+.judgment-expensive { color: #dc2626; }
+.result-avg {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
