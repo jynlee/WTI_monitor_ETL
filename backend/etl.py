@@ -1,7 +1,6 @@
 import os
 import requests
 import pymysql
-import yfinance as yf
 from pathlib import Path
 from datetime import date, timedelta
 from dotenv import load_dotenv
@@ -10,6 +9,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ECOS_API_KEY = os.getenv("ECOS_API_KEY")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
+EIA_API_KEY  = os.getenv("EIA_API_KEY")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT", 3306))
 DB_USER = os.getenv("DB_USER")
@@ -122,20 +122,24 @@ def fetch_fred_wti(start_date: str, end_date: str):
     return [o for o in observations if o["value"] != "."]
 
 
-def fetch_yahoo_wti(start_date: str, end_date: str):
-    """Yahoo Finance CL=F(WTI 선물)로 FRED fallback 데이터 수집"""
-    from datetime import datetime, timedelta as td
-    # yfinance end는 exclusive이므로 하루 추가
-    end_dt = (datetime.strptime(end_date, "%Y-%m-%d") + td(days=1)).strftime("%Y-%m-%d")
-    ticker = yf.Ticker("CL=F")
-    df = ticker.history(start=start_date, end=end_dt, auto_adjust=True)
-    if df.empty:
-        return []
-    df = df.reset_index()
-    # Date 컬럼이 timezone-aware일 수 있으므로 날짜만 추출
-    df["date"] = df["Date"].dt.strftime("%Y-%m-%d")
-    return [{"date": row["date"], "value": str(round(row["Close"], 2))}
-            for _, row in df.iterrows()]
+def fetch_eia_wti(start_date: str, end_date: str):
+    """EIA API로 WTI 현물가(RWTC) 수집 — FRED fallback"""
+    url = "https://api.eia.gov/v2/petroleum/pri/spt/data/"
+    params = {
+        "api_key": EIA_API_KEY,
+        "frequency": "daily",
+        "data[0]": "value",
+        "facets[series][]": "RWTC",
+        "start": start_date,
+        "end": end_date,
+        "sort[0][column]": "period",
+        "sort[0][direction]": "asc",
+        "length": 5000,
+    }
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    rows = response.json()["response"]["data"]
+    return [{"date": row["period"], "value": str(row["value"])} for row in rows]
 
 
 def insert_wti(conn, rows):
@@ -203,9 +207,9 @@ def main():
             source = "FRED"
 
             if not wti_rows:
-                print("[WTI] FRED 데이터 없음 → Yahoo Finance(CL=F) fallback 시도")
-                wti_rows = fetch_yahoo_wti(wti_start_str, wti_end_str)
-                source = "Yahoo Finance(CL=F)"
+                print("[WTI] FRED 데이터 없음 → EIA API fallback 시도")
+                wti_rows = fetch_eia_wti(wti_start_str, wti_end_str)
+                source = "EIA"
 
             wti_inserted = insert_wti(conn, wti_rows)
             print(f"[WTI 완료] 소스: {source} / 총 {len(wti_rows)}건 조회, {wti_inserted}건 신규 저장")
