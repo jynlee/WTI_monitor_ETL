@@ -1,6 +1,7 @@
 import os
 import requests
 import pymysql
+import yfinance as yf
 from pathlib import Path
 from datetime import date, timedelta
 from dotenv import load_dotenv
@@ -121,6 +122,22 @@ def fetch_fred_wti(start_date: str, end_date: str):
     return [o for o in observations if o["value"] != "."]
 
 
+def fetch_yahoo_wti(start_date: str, end_date: str):
+    """Yahoo Finance CL=F(WTI 선물)로 FRED fallback 데이터 수집"""
+    from datetime import datetime, timedelta as td
+    # yfinance end는 exclusive이므로 하루 추가
+    end_dt = (datetime.strptime(end_date, "%Y-%m-%d") + td(days=1)).strftime("%Y-%m-%d")
+    ticker = yf.Ticker("CL=F")
+    df = ticker.history(start=start_date, end=end_dt, auto_adjust=True)
+    if df.empty:
+        return []
+    df = df.reset_index()
+    # Date 컬럼이 timezone-aware일 수 있으므로 날짜만 추출
+    df["date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    return [{"date": row["date"], "value": str(round(row["Close"], 2))}
+            for _, row in df.iterrows()]
+
+
 def insert_wti(conn, rows):
     """wti_daily 테이블에 증분 INSERT (중복 시 스킵)"""
     if not rows:
@@ -179,12 +196,19 @@ def main():
             print(f"[WTI 증분 적재] {wti_start} ~ {today}")
 
         if wti_start <= today:
-            wti_rows = fetch_fred_wti(
-                wti_start.strftime("%Y-%m-%d"),
-                today.strftime("%Y-%m-%d")
-            )
+            wti_start_str = wti_start.strftime("%Y-%m-%d")
+            wti_end_str   = today.strftime("%Y-%m-%d")
+
+            wti_rows = fetch_fred_wti(wti_start_str, wti_end_str)
+            source = "FRED"
+
+            if not wti_rows:
+                print("[WTI] FRED 데이터 없음 → Yahoo Finance(CL=F) fallback 시도")
+                wti_rows = fetch_yahoo_wti(wti_start_str, wti_end_str)
+                source = "Yahoo Finance(CL=F)"
+
             wti_inserted = insert_wti(conn, wti_rows)
-            print(f"[WTI 완료] 총 {len(wti_rows)}건 조회, {wti_inserted}건 신규 저장")
+            print(f"[WTI 완료] 소스: {source} / 총 {len(wti_rows)}건 조회, {wti_inserted}건 신규 저장")
         else:
             print("[WTI 알림] 이미 최신 상태입니다.")
 
