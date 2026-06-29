@@ -179,15 +179,14 @@ def main():
             print(f"[증분 적재] {start_date} ~ {today}")
 
         if start_date > today:
-            print("[알림] 이미 최신 상태입니다. 수집할 데이터가 없습니다.")
-            return
+            print("[USD/KRW 알림] 이미 최신 상태입니다.")
+        else:
+            start_str = start_date.strftime("%Y%m%d")
+            end_str = today.strftime("%Y%m%d")
 
-        start_str = start_date.strftime("%Y%m%d")
-        end_str = today.strftime("%Y%m%d")
-
-        rows = fetch_ecos_data(start_str, end_str)
-        inserted = insert_data(conn, rows)
-        print(f"[USD/KRW 완료] 총 {len(rows)}건 조회, {inserted}건 신규 저장")
+            rows = fetch_ecos_data(start_str, end_str)
+            inserted = insert_data(conn, rows)
+            print(f"[USD/KRW 완료] 총 {len(rows)}건 조회, {inserted}건 신규 저장")
 
         # ── WTI 증분 적재 ──
         wti_last_date = get_wti_last_date(conn)
