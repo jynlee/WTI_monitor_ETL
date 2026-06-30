@@ -127,4 +127,4 @@ python backend/etl.py
 - **커밋 시 Co-Authored-By 제외** — Claude 이름 Contributors에 넣지 않음
 - **WTI 컬럼명** — `wti_price` 아닌 `wti_usd`
 - **Git 브랜치** — `feature/etl-script`에서 작업 후 `main`에 머지하는 전략 사용
-- **GitHub 원격 저장소** — https://github.com/jynlee/exchange_rate.git
+- **GitHub 원격 저장소** — https://github.com/jynlee/WTI_monitor_ETL.git
